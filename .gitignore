@@ -1,3 +1,5 @@
 _*.json
 __pycache__/
 .claude/
+.venv/
+test.html

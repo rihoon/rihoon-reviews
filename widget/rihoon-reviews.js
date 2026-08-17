@@ -26,14 +26,27 @@
     '.rh-review-mock .rhrv-photos{display:flex;gap:6px;margin-top:10px}' +
     '.rh-review-mock .rhrv-photos img{width:72px;height:72px;object-fit:cover;display:block;cursor:pointer}' +
     '.rh-review-mock .rhrv-more{text-align:center;padding:14px;border:1px solid #e7e5e1;margin-top:16px;cursor:pointer;font-weight:700;font-size:14px}' +
-    '.rh-review-mock .rhrv-more:hover{background:#faf9f7}';
+    '.rh-review-mock .rhrv-more:hover{background:#faf9f7}' +
+    '.rhrv-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out}' +
+    '.rhrv-lb img{max-width:92vw;max-height:92vh;object-fit:contain;box-shadow:0 10px 40px rgba(0,0,0,.5)}';
   document.head.appendChild(css);
 
+  // 사진은 사이트 루트(=data 상위)의 photos/ 아래. BASE가 상대경로여도 절대 URL로 정규화.
+  var SITE = new URL(BASE.replace(/(^|\/)data\/?$/, '') || '.', location.href).href.replace(/\/$/, '');
+  function url(u) { return /^https?:/.test(u) ? u : SITE + '/' + u.replace(/^\/+/, ''); }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // 라이트박스(크게 보기)
+  var lb = document.createElement('div'); lb.className = 'rhrv-lb'; lb.innerHTML = '<img alt="">';
+  lb.addEventListener('click', function () { lb.style.display = 'none'; });
+  document.body.appendChild(lb);
+  root.addEventListener('click', function (e) {
+    var im = e.target.closest('.rhrv-ph img, .rhrv-photos img'); if (!im) return;
+    lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex';
+  });
   function stars(n) { n = Math.round(n || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
   function fdate(d) { return (d || '').replace(/-/g, '.'); }
   function item(r) {
-    var photos = (r.p || []).map(function (u) { return '<img src="' + esc(u) + '" alt="리뷰 사진" loading="lazy">'; }).join('');
+    var photos = (r.p || []).map(function (u) { return '<img src="' + esc(url(u)) + '" alt="리뷰 사진" loading="lazy">'; }).join('');
     return '<li class="rhrv-item"><div class="rhrv-meta"><span class="rhrv-st">' + stars(r.r) +
       '</span><span class="rhrv-name">' + esc(r.a) + '</span><span class="rhrv-date">' + fdate(r.d) +
       '</span></div><p class="rhrv-text">' + esc(r.t) + '</p>' +
@@ -66,9 +79,12 @@
 
     // 상단 포토갤러리: 대표가 고른 featured(사진 URL 목록)만. 없으면 숨김.
     var gw = root.querySelector('.rhrv-gallery-wrap'), g = root.querySelector('.rhrv-gallery');
-    var feat = S.featured || [];
+    // 대표가 고른 featured 우선, 없으면 자동 갤러리(사진 있는 최신 리뷰)
+    var feat = (S.featured && S.featured.length) ? S.featured : (S.gallery || []);
     if (gw) gw.style.display = feat.length ? '' : 'none';
-    if (g && feat.length) g.innerHTML = feat.map(function (u) { return '<div class="rhrv-ph"><img src="' + esc(u) + '" alt="고객 포토리뷰" loading="lazy"></div>'; }).join('');
+    var gl = root.querySelector('.rhrv-gallery-label');
+    if (gl && S.photo_count) gl.textContent = '고객 포토리뷰 ' + S.photo_count.toLocaleString();
+    if (g && feat.length) g.innerHTML = feat.map(function (u) { return '<div class="rhrv-ph"><img src="' + esc(url(u)) + '" alt="고객 포토리뷰" loading="lazy"></div>'; }).join('');
 
     pages = S.pages || 1;
     if (list) { list.innerHTML = (S.first || []).map(item).join(''); markLong(list); }
