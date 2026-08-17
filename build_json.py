@@ -20,14 +20,22 @@ def build(cafe24_no, folder):
     for _, r in df.iterrows():
         txt = html.unescape(str(r['리뷰내용'])).strip()
         if not txt: continue
-        reviews.append({
+        # 사진: 수집기가 '이미지' 컬럼(쉼표구분 URL)을 채우면 자동 반영 (v2)
+        photos = []
+        for col in ('이미지', '사진', 'images'):
+            if col in df.columns and pd.notna(r.get(col)) and str(r[col]).strip():
+                photos = [u.strip() for u in str(r[col]).split(',') if u.strip().startswith('http')]
+                break
+        rec = {
             'r': int(r['평점']) if pd.notna(r['평점']) else None,
             'd': str(r['작성일'])[:10],
             'a': str(r['작성자']),
             't': txt,
             'h': int(r['도움수']) if pd.notna(r.get('도움수')) else 0,
             'b': bool(r['베스트']) if '베스트' in r else False,
-        })
+        }
+        if photos: rec['p'] = photos
+        reviews.append(rec)
     reviews.sort(key=lambda x: x['d'], reverse=True)
     rated = [x['r'] for x in reviews if x['r']]
     dist = {str(k): rated.count(k) for k in range(5, 0, -1)}
@@ -48,6 +56,9 @@ def build(cafe24_no, folder):
     summary = {k: v for k, v in out.items() if k != 'reviews'}
     summary['pages'] = len(pages); summary['page_size'] = PAGE
     summary['first'] = pages[0]
+    # 대표가 고른 상단 포토(featured): featured/{cafe24번호}.json = ["url", ...]. 없으면 빈 목록(갤러리 숨김)
+    fp = Path(__file__).parent / 'featured' / f'{cafe24_no}.json'
+    summary['featured'] = json.loads(fp.read_text(encoding='utf-8')) if fp.exists() else []
     (d / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print(f'{cafe24_no} ← {folder}: {len(reviews)}건 avg {out["avg"]} dist {dist} → data/{cafe24_no}/summary.json + {len(pages)} pages')
 
