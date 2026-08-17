@@ -25,6 +25,10 @@ print('backup:', bk, len(src))
 new = TAG_RE.sub('', src)
 assert MARK in new, '삽입 마커 없음'
 new = new.replace(MARK, MARK + TAG, 1)
+# 크리마 위젯 자리 제거 (대표 요청 2026-08-18): 빈 "리뷰" 영역 + 주석
+new = re.sub(r'\s*<!-- 크리마 리뷰 위젯[^\n]*-->\s*<div class="crema-product-reviews"></div>', '', new)
+new = new.replace('<div class="crema-product-reviews"></div>', '')
+print('crema container removed:', 'crema-product-reviews"></div>' not in new)
 
 if '--dry' in sys.argv:
     print('DRY: would insert:', TAG.strip()); sys.exit()

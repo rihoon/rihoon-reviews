@@ -23,8 +23,14 @@
     '.rh-review-mock .rhrv-toggle:hover{color:#1a1a1a;text-decoration:underline}' +
     '.rh-review-mock .rhrv-gallery .rhrv-ph{flex:0 0 auto;width:92px;height:92px;border-radius:0;overflow:hidden;background:#f2f0ec;cursor:pointer}' +
     '.rh-review-mock .rhrv-gallery .rhrv-ph img{width:100%;height:100%;object-fit:cover;display:block}' +
-    '.rh-review-mock .rhrv-photos{display:flex;gap:6px;margin-top:10px}' +
-    '.rh-review-mock .rhrv-photos img{width:72px;height:72px;object-fit:cover;display:block;cursor:pointer}' +
+    /* 카드 = 좌 글 / 우 사진 2단 (사진 없으면 글 전폭). 세로 길이 절감 */
+    '.rh-review-mock .rhrv-item{display:flex;gap:20px;align-items:flex-start}' +
+    '.rh-review-mock .rhrv-body{flex:1 1 auto;min-width:0}' +
+    '.rh-review-mock .rhrv-photos{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,96px);gap:6px;margin:0}' +
+    '.rh-review-mock .rhrv-photos img{width:96px;height:96px;object-fit:cover;display:block;cursor:pointer;background:#f2f0ec}' +
+    '.rh-review-mock .rhrv-photos.n1{grid-template-columns:96px}' +
+    '.rh-review-mock .rhrv-photos .rhrv-morecnt{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:#f2f0ec;font-size:13px;color:#4a4a4a;cursor:pointer}' +
+    '@media (max-width:640px){.rh-review-mock .rhrv-item{flex-direction:column;gap:10px}.rh-review-mock .rhrv-photos{display:flex;flex-wrap:wrap}}' +
     '.rh-review-mock .rhrv-more{text-align:center;padding:14px;border:1px solid #e7e5e1;margin-top:16px;cursor:pointer;font-weight:700;font-size:14px}' +
     '.rh-review-mock .rhrv-more:hover{background:#faf9f7}' +
     '.rhrv-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out}' +
@@ -40,18 +46,24 @@
   lb.addEventListener('click', function () { lb.style.display = 'none'; });
   document.body.appendChild(lb);
   root.addEventListener('click', function (e) {
-    var im = e.target.closest('.rhrv-ph img, .rhrv-photos img'); if (!im) return;
+    var im = e.target.closest('.rhrv-ph img, .rhrv-photos img, .rhrv-morecnt'); if (!im) return;
     lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex';
   });
   function stars(n) { n = Math.round(n || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
   function fdate(d) { return (d || '').replace(/-/g, '.'); }
   function item(r) {
-    var photos = (r.p || []).map(function (u) { return '<img src="' + esc(url(u)) + '" alt="리뷰 사진" loading="lazy">'; }).join('');
-    return '<li class="rhrv-item"><div class="rhrv-meta"><span class="rhrv-st">' + stars(r.r) +
+    var ps = r.p || [], MAX = 4;
+    var shown = ps.slice(0, MAX).map(function (u, i) {
+      // 마지막 칸에 남은 장수 표시(+N), 클릭 시 라이트박스로 순서대로
+      if (i === MAX - 1 && ps.length > MAX) return '<div class="rhrv-morecnt" data-full="' + esc(url(u)) + '">+' + (ps.length - MAX + 1) + '</div>';
+      return '<img src="' + esc(url(u)) + '" alt="리뷰 사진" loading="lazy">';
+    }).join('');
+    var pcls = ps.length === 1 ? ' n1' : '';
+    return '<li class="rhrv-item"><div class="rhrv-body"><div class="rhrv-meta"><span class="rhrv-st">' + stars(r.r) +
       '</span><span class="rhrv-name">' + esc(r.a) + '</span><span class="rhrv-date">' + fdate(r.d) +
       '</span></div><p class="rhrv-text">' + esc(r.t) + '</p>' +
-      '<button type="button" class="rhrv-toggle">더보기</button>' +
-      (photos ? '<div class="rhrv-photos">' + photos + '</div>' : '') + '</li>';
+      '<button type="button" class="rhrv-toggle">더보기</button></div>' +
+      (shown ? '<div class="rhrv-photos' + pcls + '">' + shown + '</div>' : '') + '</li>';
   }
   // 렌더 후: 4줄 넘는 리뷰만 '더보기' 표시
   function markLong(scope) {
