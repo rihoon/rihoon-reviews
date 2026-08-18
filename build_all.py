@@ -60,10 +60,37 @@ def build_one(pno, folders):
         (d / f'p{i}.json').write_text(json.dumps(pg, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     fp = FEAT / f'{pno}.json'
     photo_reviews = [x for x in reviews if x.get('p')]
+    # 베스트 리뷰 자동 선별: 평점·도움수·네이버베스트·본문길이·사진·최신성 가중합. pins/{pno}.json 있으면 그 순서 우선(대표 수동)
+    import datetime as _dt
+    today = _dt.date.today()
+    def score(x):
+        s = 0.0
+        s += (x['r'] or 0) * 2                    # 5점 = +10
+        s += min(x.get('h', 0), 20) * 1.5         # 도움수 최대 +30
+        s += 12 if x.get('b') else 0              # 네이버 베스트 표시
+        L = len(x['t']); s += min(L, 300) / 300 * 10   # 길이(300자까지) 최대 +10
+        s += 8 if x.get('p') else 0               # 사진 있음
+        try:
+            days = (today - _dt.date.fromisoformat(x['d'])).days
+            s += max(0, 6 - days / 60)            # 최근 1년 내 가점(최대 +6)
+        except Exception: pass
+        if L < 20: s -= 15                        # 너무 짧은 건 제외 취지
+        return s
+    ranked = sorted(reviews, key=score, reverse=True)
+    pinp = HERE / 'pins' / f'{pno}.json'
+    pins = json.loads(pinp.read_text(encoding='utf-8')) if pinp.exists() else {}
+    excl = set(pins.get('exclude', [])); pinned = pins.get('pin', [])
+    key_of = lambda x: f"{x['d']}|{x['a']}|{x['t'][:30]}"
+    top = [x for x in reviews if key_of(x) in pinned]
+    top.sort(key=lambda x: pinned.index(key_of(x)))
+    for x in ranked:
+        if len(top) >= 6: break
+        if key_of(x) in excl or x in top: continue
+        top.append(x)
     # 갤러리 기본값: 사진 있는 최신 리뷰의 첫 사진 24장 (대표가 featured 고르면 그게 우선)
     auto_gallery = [x['p'][0] for x in photo_reviews[:24]]
     summary = {'product_no': int(pno), 'sources': [f.split('_')[0] for f in folders], 'count': len(reviews),
-               'photo_count': len(photo_reviews), 'gallery': auto_gallery,
+               'photo_count': len(photo_reviews), 'gallery': auto_gallery, 'top': top,
                'avg': round(sum(rated)/len(rated), 2) if rated else None,
                'dist': {str(k): rated.count(k) for k in range(5, 0, -1)},
                'pages': len(pages), 'page_size': PAGE, 'first': pages[0],

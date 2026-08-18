@@ -1,4 +1,4 @@
-/* 리훈 리뷰 위젯 v1.1 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
+/* 리훈 리뷰 위젯 v1.3 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
  * 안전원칙: cafe24 상품후기 게시판/상세설명/EP 무접촉. 오직 별도 fetch → 프론트 렌더.
  * v1.1: 긴 리뷰 4줄 접기(더보기), 상단 포토갤러리=대표가 고른 featured만 노출.
  * 사용: <script src=".../rihoon-reviews.js" data-base="https://<host>/data" defer></script>
@@ -30,9 +30,13 @@
     '.rh-review-mock .rhrv-photos img{width:96px;height:96px;object-fit:cover;display:block;cursor:pointer;background:#f2f0ec}' +
     '.rh-review-mock .rhrv-photos.n1{grid-template-columns:96px}' +
     '.rh-review-mock .rhrv-photos .rhrv-morecnt{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:#f2f0ec;font-size:13px;color:#4a4a4a;cursor:pointer}' +
-    '@media (max-width:640px){.rh-review-mock .rhrv-item{flex-direction:column;gap:10px}.rh-review-mock .rhrv-photos{display:flex;flex-wrap:wrap}}' +
+    /* 좁은 컨테이너(≤520px)에서만 세로 전환 — 뷰포트가 아니라 리뷰 영역 폭 기준(container query) */
+    '.rh-review-mock{container-type:inline-size}' +
+    '@container (max-width:520px){.rh-review-mock .rhrv-item{flex-direction:column;gap:10px}.rh-review-mock .rhrv-photos{display:flex;flex-wrap:wrap}}' +
     '.rh-review-mock .rhrv-more{text-align:center;padding:14px;border:1px solid #e7e5e1;margin-top:16px;cursor:pointer;font-weight:700;font-size:14px}' +
     '.rh-review-mock .rhrv-more:hover{background:#faf9f7}' +
+    '.rh-review-mock .rhrv-best-label{font-size:14px;font-weight:800;color:#1a1a1a;padding:22px 0 8px;border-bottom:2px solid #1a1a1a;margin-bottom:4px;letter-spacing:-.01em}' +
+    '.rh-review-mock .rhrv-best .rhrv-item{background:#faf9f7;padding:18px 16px;margin-bottom:8px;border-bottom:0}' +
     '.rhrv-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out}' +
     '.rhrv-lb img{max-width:92vw;max-height:92vh;object-fit:contain;box-shadow:0 10px 40px rgba(0,0,0,.5)}';
   document.head.appendChild(css);
@@ -99,6 +103,15 @@
     if (g && feat.length) g.innerHTML = feat.map(function (u) { return '<div class="rhrv-ph"><img src="' + esc(url(u)) + '" alt="고객 포토리뷰" loading="lazy"></div>'; }).join('');
 
     pages = S.pages || 1;
+    // 베스트 리뷰(자동 선별 + 대표 핀) → 리스트 맨 위 섹션
+    var top = S.top || [];
+    if (list && top.length) {
+      var best = document.createElement('div'); best.className = 'rhrv-best';
+      best.innerHTML = '<div class="rhrv-best-label">베스트 리뷰</div><ul class="rhrv-list rhrv-best-list">' + top.map(item).join('') + '</ul>';
+      list.parentNode.insertBefore(best, list); markLong(best);
+      var lbl2 = document.createElement('div'); lbl2.className = 'rhrv-best-label'; lbl2.textContent = '전체 리뷰';
+      list.parentNode.insertBefore(lbl2, list);
+    }
     if (list) { list.innerHTML = (S.first || []).map(item).join(''); markLong(list); }
     if (more) {
       more.style.display = pages > 1 ? '' : 'none';
@@ -118,5 +131,8 @@
       var tag = document.createElement('script'); tag.type = 'application/ld+json'; tag.textContent = JSON.stringify(ld); document.head.appendChild(tag);
     }
     root.setAttribute('data-rihoon-reviews', 'loaded:' + S.count);
+    // 버전 뱃지(반영 확인용, 아주 작게)
+    var vb = document.createElement('span'); vb.textContent = 'v1.3';
+    vb.style.cssText = 'display:block;text-align:right;font-size:10px;color:#c9c5bf;margin-top:6px'; root.appendChild(vb);
   }).catch(function () { root.setAttribute('data-rihoon-reviews', 'error'); });
 })();
