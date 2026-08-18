@@ -1,4 +1,4 @@
-/* 리훈 리뷰 위젯 v1.5 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
+/* 리훈 리뷰 위젯 v1.6 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
  * 안전원칙: cafe24 상품후기 게시판/상세설명/EP 무접촉. 오직 별도 fetch → 프론트 렌더.
  * v1.1: 긴 리뷰 4줄 접기(더보기), 상단 포토갤러리=대표가 고른 featured만 노출.
  * 사용: <script src=".../rihoon-reviews.js" data-base="https://<host>/data" defer></script>
@@ -24,9 +24,11 @@
     '.rh-review-mock .rhrv-gallery .rhrv-ph{flex:0 0 auto;width:92px;height:92px;border-radius:0;overflow:hidden;background:#f2f0ec;cursor:pointer}' +
     '.rh-review-mock .rhrv-gallery .rhrv-ph img{width:100%;height:100%;object-fit:cover;display:block}' +
     /* 카드 = 좌 글 / 우 사진 2단 (사진 없으면 글 전폭). 세로 길이 절감 */
-    '.rh-review-mock .rhrv-item{display:flex;gap:20px;align-items:flex-start}' +
-    '.rh-review-mock .rhrv-body{flex:1 1 auto;min-width:0}' +
-    '.rh-review-mock .rhrv-photos{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,96px);gap:6px;margin:0}' +
+    /* 좌우 여백 16px(별점·글·사진 모두), 글 영역은 사진 높이(96px)에 맞춰 세로 중앙 정렬 → 위아래 라인이 맞음 */
+    '.rh-review-mock .rhrv-item{display:flex;gap:20px;align-items:center;padding-left:16px !important;padding-right:16px !important;box-sizing:border-box}' +
+    '.rh-review-mock .rhrv-body{flex:1 1 auto;min-width:0;min-height:96px;display:flex;flex-direction:column;justify-content:center}' +
+    '.rh-review-mock .rhrv-photos{align-self:center;height:96px;margin:0 !important}' +
+    '.rh-review-mock .rhrv-photos{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,96px);column-gap:6px;row-gap:0;margin:0}' +
     '.rh-review-mock .rhrv-photos.n1{grid-template-columns:96px}.rh-review-mock .rhrv-photos.n2{grid-template-columns:repeat(2,96px)}' +
     '.rh-review-mock .rhrv-photos img{width:96px;height:96px;object-fit:cover;display:block;cursor:pointer;background:#f2f0ec}' +
     '.rh-review-mock .rhrv-ph-more{position:relative;display:block;width:96px;height:96px;cursor:pointer}' +
@@ -42,8 +44,9 @@
     '.rh-review-mock .rhrv-pg-btn.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:700}' +
     '.rh-review-mock .rhrv-pg-btn:disabled{opacity:.35;cursor:default}' +
     '.rh-review-mock .rhrv-pg-dots{color:#8a8783;padding:0 4px;font-size:13px}' +
-    '.rh-review-mock .rhrv-best-label{font-size:14px;font-weight:800;color:#1a1a1a;padding:22px 0 8px;border-bottom:2px solid #1a1a1a;margin-bottom:4px;letter-spacing:-.01em}' +
-    '.rh-review-mock .rhrv-best .rhrv-item{background:#faf9f7;padding:18px 16px;margin-bottom:8px;border-bottom:0}' +
+    '.rh-review-mock .rhrv-head,.rh-review-mock .rhrv-gallery-wrap,.rh-review-mock .rhrv-pager{padding-left:16px !important;padding-right:16px !important;box-sizing:border-box}' +
+    '.rh-review-mock .rhrv-best-label{font-size:14px;font-weight:800;color:#1a1a1a;padding:22px 16px 8px;border-bottom:2px solid #1a1a1a;margin-bottom:4px;letter-spacing:-.01em}' +
+    '.rh-review-mock .rhrv-best .rhrv-item{background:#faf9f7;padding-top:18px;padding-bottom:18px;margin-bottom:8px;border-bottom:0}' +
     '.rhrv-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out}' +
     '.rhrv-lb img{max-width:92vw;max-height:92vh;object-fit:contain;box-shadow:0 10px 40px rgba(0,0,0,.5)}';
   document.head.appendChild(css);
@@ -159,7 +162,7 @@
     }
     root.setAttribute('data-rihoon-reviews', 'loaded:' + S.count);
     // 버전 뱃지(반영 확인용, 아주 작게)
-    var vb = document.createElement('span'); vb.textContent = 'v1.5';
+    var vb = document.createElement('span'); vb.textContent = 'v1.6';
     vb.style.cssText = 'display:block;text-align:right;font-size:10px;color:#c9c5bf;margin-top:6px'; root.appendChild(vb);
   }).catch(function () { root.setAttribute('data-rihoon-reviews', 'error'); });
 })();
