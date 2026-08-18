@@ -1,4 +1,4 @@
-/* 리훈 리뷰 위젯 v1.3 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
+/* 리훈 리뷰 위젯 v1.4 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
  * 안전원칙: cafe24 상품후기 게시판/상세설명/EP 무접촉. 오직 별도 fetch → 프론트 렌더.
  * v1.1: 긴 리뷰 4줄 접기(더보기), 상단 포토갤러리=대표가 고른 featured만 노출.
  * 사용: <script src=".../rihoon-reviews.js" data-base="https://<host>/data" defer></script>
@@ -35,6 +35,12 @@
     '@container (max-width:520px){.rh-review-mock .rhrv-item{flex-direction:column;gap:10px}.rh-review-mock .rhrv-photos{display:flex;flex-wrap:wrap}}' +
     '.rh-review-mock .rhrv-more{text-align:center;padding:14px;border:1px solid #e7e5e1;margin-top:16px;cursor:pointer;font-weight:700;font-size:14px}' +
     '.rh-review-mock .rhrv-more:hover{background:#faf9f7}' +
+    '.rh-review-mock .rhrv-pager{display:flex;justify-content:center;align-items:center;gap:4px;padding:26px 0 8px;flex-wrap:wrap}' +
+    '.rh-review-mock .rhrv-pg-btn{min-width:34px;height:34px;padding:0 8px;border:1px solid #e7e5e1;background:#fff;color:#4a4a4a;font-size:13px;font-family:inherit;cursor:pointer;border-radius:0}' +
+    '.rh-review-mock .rhrv-pg-btn:hover:not(:disabled){border-color:#1a1a1a;color:#1a1a1a}' +
+    '.rh-review-mock .rhrv-pg-btn.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:700}' +
+    '.rh-review-mock .rhrv-pg-btn:disabled{opacity:.35;cursor:default}' +
+    '.rh-review-mock .rhrv-pg-dots{color:#8a8783;padding:0 4px;font-size:13px}' +
     '.rh-review-mock .rhrv-best-label{font-size:14px;font-weight:800;color:#1a1a1a;padding:22px 0 8px;border-bottom:2px solid #1a1a1a;margin-bottom:4px;letter-spacing:-.01em}' +
     '.rh-review-mock .rhrv-best .rhrv-item{background:#faf9f7;padding:18px 16px;margin-bottom:8px;border-bottom:0}' +
     '.rhrv-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out}' +
@@ -113,16 +119,33 @@
       list.parentNode.insertBefore(lbl2, list);
     }
     if (list) { list.innerHTML = (S.first || []).map(item).join(''); markLong(list); }
-    if (more) {
-      more.style.display = pages > 1 ? '' : 'none';
-      more.addEventListener('click', function () {
-        if (page >= pages) return; page++;
-        loadPage(page).then(function (arr) {
-          list.insertAdjacentHTML('beforeend', arr.map(item).join('')); markLong(list);
-          if (page >= pages) more.style.display = 'none';
-        });
+    // 페이지네이션(교체 방식): ‹ 1 2 3 … N › — 한 번에 20개, 페이지 이동 시 리뷰 상단으로
+    if (more) more.style.display = 'none';
+    var pager = document.createElement('div'); pager.className = 'rhrv-pager';
+    (more ? more.parentNode : root).insertBefore(pager, more || null);
+    function drawPager() {
+      if (pages <= 1) { pager.innerHTML = ''; return; }
+      var h = '<button class="rhrv-pg-btn" data-p="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + '>‹</button>';
+      var win = 2, nums = [];
+      for (var i = 1; i <= pages; i++) if (i === 1 || i === pages || Math.abs(i - page) <= win) nums.push(i);
+      var last = 0;
+      nums.forEach(function (n) {
+        if (n - last > 1) h += '<span class="rhrv-pg-dots">…</span>';
+        h += '<button class="rhrv-pg-btn' + (n === page ? ' on' : '') + '" data-p="' + n + '">' + n + '</button>'; last = n;
       });
+      h += '<button class="rhrv-pg-btn" data-p="' + (page + 1) + '"' + (page >= pages ? ' disabled' : '') + '>›</button>';
+      pager.innerHTML = h;
     }
+    drawPager();
+    pager.addEventListener('click', function (e) {
+      var b = e.target.closest('.rhrv-pg-btn'); if (!b || b.disabled) return;
+      var n = parseInt(b.getAttribute('data-p'), 10); if (!n || n === page || n < 1 || n > pages) return;
+      loadPage(n).then(function (arr) {
+        page = n; list.innerHTML = arr.map(item).join(''); markLong(list); drawPager();
+        var lbl = root.querySelector('.rhrv-best-label:last-of-type') || list;
+        (lbl || list).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
     if (S.count > 0 && S.avg) {
       var name = (document.querySelector('meta[property="og:title"]') || {}).content || document.title;
       var ld = { '@context': 'https://schema.org', '@type': 'Product', name: name,
@@ -132,7 +155,7 @@
     }
     root.setAttribute('data-rihoon-reviews', 'loaded:' + S.count);
     // 버전 뱃지(반영 확인용, 아주 작게)
-    var vb = document.createElement('span'); vb.textContent = 'v1.3';
+    var vb = document.createElement('span'); vb.textContent = 'v1.4';
     vb.style.cssText = 'display:block;text-align:right;font-size:10px;color:#c9c5bf;margin-top:6px'; root.appendChild(vb);
   }).catch(function () { root.setAttribute('data-rihoon-reviews', 'error'); });
 })();
