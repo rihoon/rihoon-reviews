@@ -1,4 +1,4 @@
-/* 리훈 리뷰 위젯 v1.4 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
+/* 리훈 리뷰 위젯 v1.5 — 격리 저장소(JSON) → skin41 .rh-review-mock 채우기 + JSON-LD.
  * 안전원칙: cafe24 상품후기 게시판/상세설명/EP 무접촉. 오직 별도 fetch → 프론트 렌더.
  * v1.1: 긴 리뷰 4줄 접기(더보기), 상단 포토갤러리=대표가 고른 featured만 노출.
  * 사용: <script src=".../rihoon-reviews.js" data-base="https://<host>/data" defer></script>
@@ -26,10 +26,11 @@
     /* 카드 = 좌 글 / 우 사진 2단 (사진 없으면 글 전폭). 세로 길이 절감 */
     '.rh-review-mock .rhrv-item{display:flex;gap:20px;align-items:flex-start}' +
     '.rh-review-mock .rhrv-body{flex:1 1 auto;min-width:0}' +
-    '.rh-review-mock .rhrv-photos{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,96px);gap:6px;margin:0}' +
+    '.rh-review-mock .rhrv-photos{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,96px);gap:6px;margin:0}' +
+    '.rh-review-mock .rhrv-photos.n1{grid-template-columns:96px}.rh-review-mock .rhrv-photos.n2{grid-template-columns:repeat(2,96px)}' +
     '.rh-review-mock .rhrv-photos img{width:96px;height:96px;object-fit:cover;display:block;cursor:pointer;background:#f2f0ec}' +
-    '.rh-review-mock .rhrv-photos.n1{grid-template-columns:96px}' +
-    '.rh-review-mock .rhrv-photos .rhrv-morecnt{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:#f2f0ec;font-size:13px;color:#4a4a4a;cursor:pointer}' +
+    '.rh-review-mock .rhrv-ph-more{position:relative;display:block;width:96px;height:96px;cursor:pointer}' +
+    '.rh-review-mock .rhrv-ph-more b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);color:#fff;font-size:15px;font-weight:700;pointer-events:none}' +
     /* 좁은 컨테이너(≤520px)에서만 세로 전환 — 뷰포트가 아니라 리뷰 영역 폭 기준(container query) */
     '.rh-review-mock{container-type:inline-size}' +
     '@container (max-width:520px){.rh-review-mock .rhrv-item{flex-direction:column;gap:10px}.rh-review-mock .rhrv-photos{display:flex;flex-wrap:wrap}}' +
@@ -56,19 +57,22 @@
   lb.addEventListener('click', function () { lb.style.display = 'none'; });
   document.body.appendChild(lb);
   root.addEventListener('click', function (e) {
-    var im = e.target.closest('.rhrv-ph img, .rhrv-photos img, .rhrv-morecnt'); if (!im) return;
+    var im = e.target.closest('.rhrv-ph img, .rhrv-photos img, .rhrv-ph-more'); if (!im) return;
+    if (im.tagName !== 'IMG') im = im.querySelector('img');
+    if (!im) return;
     lb.querySelector('img').src = im.getAttribute('data-full') || im.src; lb.style.display = 'flex';
   });
   function stars(n) { n = Math.round(n || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
   function fdate(d) { return (d || '').replace(/-/g, '.'); }
   function item(r) {
-    var ps = r.p || [], MAX = 4;
+    var ps = r.p || [], MAX = 3;
+    // 사진 3장, 더 있으면 마지막 장 위에 "+N" 반투명 오버레이 (클릭 시 그 사진 확대)
     var shown = ps.slice(0, MAX).map(function (u, i) {
-      // 마지막 칸에 남은 장수 표시(+N), 클릭 시 라이트박스로 순서대로
-      if (i === MAX - 1 && ps.length > MAX) return '<div class="rhrv-morecnt" data-full="' + esc(url(u)) + '">+' + (ps.length - MAX + 1) + '</div>';
-      return '<img src="' + esc(url(u)) + '" alt="리뷰 사진" loading="lazy">';
+      var img = '<img src="' + esc(url(u)) + '" alt="리뷰 사진" loading="lazy">';
+      if (i === MAX - 1 && ps.length > MAX) return '<span class="rhrv-ph-more">' + img + '<b>+' + (ps.length - MAX) + '</b></span>';
+      return img;
     }).join('');
-    var pcls = ps.length === 1 ? ' n1' : '';
+    var pcls = ps.length === 1 ? ' n1' : (ps.length === 2 ? ' n2' : '');
     return '<li class="rhrv-item"><div class="rhrv-body"><div class="rhrv-meta"><span class="rhrv-st">' + stars(r.r) +
       '</span><span class="rhrv-name">' + esc(r.a) + '</span><span class="rhrv-date">' + fdate(r.d) +
       '</span></div><p class="rhrv-text">' + esc(r.t) + '</p>' +
@@ -155,7 +159,7 @@
     }
     root.setAttribute('data-rihoon-reviews', 'loaded:' + S.count);
     // 버전 뱃지(반영 확인용, 아주 작게)
-    var vb = document.createElement('span'); vb.textContent = 'v1.4';
+    var vb = document.createElement('span'); vb.textContent = 'v1.5';
     vb.style.cssText = 'display:block;text-align:right;font-size:10px;color:#c9c5bf;margin-top:6px'; root.appendChild(vb);
   }).catch(function () { root.setAttribute('data-rihoon-reviews', 'error'); });
 })();

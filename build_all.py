@@ -10,7 +10,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 HERE = Path(__file__).parent
 VOC = Path(r'Z:\rihoon1\리훈\15. 고객의소리')
 MAP = HERE / 'mapping.json'; FEAT = HERE / 'featured'; OUT = HERE / 'data'
-PAGE = 20
+PAGE = 10
 
 import hashlib
 def _pkey(u): return hashlib.md5(u.encode()).hexdigest()[:12]
