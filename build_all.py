@@ -24,9 +24,11 @@ def photo_map(pno):
 
 def load_reviews(folder, pmap=None):
     pmap = pmap or {}
+    folder, _, kw = folder.partition('|')  # "폴더|벽걸이" = 상품명에 키워드 포함된 리뷰만 (한 폴더에 여러 제품 섞인 경우)
     f = VOC / folder / '후기' / '후기.xlsx'
     if not f.exists(): return []
     df = pd.read_excel(f)
+    if kw: df = df[df['상품명'].astype(str).str.contains(kw, regex=False)]
     if '상태' in df: df = df[df['상태'].astype(str).str.upper() == 'NORMAL']
     df = df.dropna(subset=['리뷰내용'])
     out = []

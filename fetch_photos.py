@@ -25,7 +25,9 @@ def grab(u, dst):
     return dst.stat().st_size
 
 def main(pno, folder, limit=None):
+    folder, _, kw = folder.partition('|')  # build_all.py와 같은 "폴더|키워드" 필터
     df = pd.read_excel(VOC / folder / '후기' / '후기.xlsx')
+    if kw: df = df[df['상품명'].astype(str).str.contains(kw, regex=False)]
     if '이미지' not in df.columns: print('이미지 컬럼 없음 — 수집기 재실행 필요'); return
     urls = []
     for cell in df['이미지'].dropna().astype(str):
