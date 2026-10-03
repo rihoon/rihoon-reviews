@@ -29,6 +29,7 @@ def main(pno, folder, limit=None):
     df = pd.read_excel(VOC / folder / '후기' / '후기.xlsx')
     if kw: df = df[df['상품명'].astype(str).str.contains(kw, regex=False)]
     if '이미지' not in df.columns: print('이미지 컬럼 없음 — 수집기 재실행 필요'); return
+    df = df.sort_values('작성일', ascending=False)  # --limit = 최신 N장 (xlsx는 오래된 순)
     urls = []
     for cell in df['이미지'].dropna().astype(str):
         urls += [u.strip() for u in cell.split(',') if u.strip().startswith('http')]
